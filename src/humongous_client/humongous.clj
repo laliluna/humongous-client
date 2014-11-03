@@ -58,9 +58,18 @@
 (defn drop! [coll]
   (.drop (.getCollection *mongo-db-connection* (name coll))))
 
-(defn fetch-docs [coll]
-  (with-open [cursor (.find (.getCollection *mongo-db-connection* (name coll)))]
-    (map to-clojure cursor)))
+(defn- build-field-map [fields]
+  (if fields
+    (reduce (fn [m v] (assoc m v 1)) {} fields)))
+
+(defn fetch-docs
+  ([coll]
+   (fetch-docs coll {}))
+  ([coll query & {:keys [fields] :or {fields nil}}]
+   (with-open [cursor (.find (.getCollection *mongo-db-connection* (name coll))
+                             (to-mongo query)
+                             (to-mongo (build-field-map fields)))]
+     (map to-clojure cursor))))
 
 (defn insert! [coll data]
   (let [document (to-mongo data)]
