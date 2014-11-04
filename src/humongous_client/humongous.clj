@@ -98,7 +98,7 @@
                       (if (= (second v) :asc) 1 -1)]
                      [v 1])) m)))))
 
-(def valid-params [:fields :sort-by :limit :skip :comment :batch-size :max-time-millis])
+(def valid-params [:fields :sort-by :limit :skip :comment :batch-size :max-time-millis :hint])
 
 (defn fetch-docs
   "Sample:
@@ -134,8 +134,8 @@
      (with-db db (fetch-docs :kites {} :max-time-millis 5000))"
   ([coll]
    (fetch-docs coll {}))
-  ([coll query & {:keys [fields sort-by limit skip comment batch-size max-time-millis] :as params
-                  :or {fields nil batch-size nil sort-by nil limit nil skip nil comment nil max-time-millis nil}}]
+  ([coll query & {:keys [fields sort-by limit skip comment batch-size max-time-millis hint] :as params
+                  :or {fields nil batch-size nil sort-by nil limit nil skip nil comment nil max-time-millis nil hint nil}}]
    (if-not (empty? (apply dissoc params valid-params))
      (throw (IllegalArgumentException. (str "Unsupported params: " (keys (apply dissoc params valid-params))))))
    (with-open [cursor (.find (get-collection coll)
@@ -147,7 +147,8 @@
              skip (.skip skip)
              comment (.comment comment)
              batch-size (.batchSize batch-size)
-             max-time-millis (.maxTime max-time-millis TimeUnit/MILLISECONDS))
+             max-time-millis (.maxTime max-time-millis TimeUnit/MILLISECONDS)
+             hint (.hint (to-mongo hint)))
      (map to-clojure cursor))))
 
 (defn insert!

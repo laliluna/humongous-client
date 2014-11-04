@@ -69,5 +69,9 @@
          (fact "Define batch size of cursor"
                (with-db db (fetch-docs :kites {} :batch-size 5)))
          (fact "Limit query execution time"
-               (with-db db (fetch-docs :kites {} :max-time-millis 5000)))))
+               (with-db db (fetch-docs :kites {} :max-time-millis 5000)))
+         (fact "Give a query hint to use an index"
+               (with-db db
+                        (fetch-docs :kites {:name "blue"} :hint "name_index")
+                        (fetch-docs :kites {:name "blue"} :hint {:name 1})))))
 
