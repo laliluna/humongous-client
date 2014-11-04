@@ -115,5 +115,11 @@
                           (batch-size 10)
                           (timeout-millis 2000)
                           (query-hint {:name 1})
-                          (fetch)))
-               => [{:_id 3 :name "red" :size 7}])))
+                          (fetch)) => [{:_id 3 :name "red" :size 7}]
+                        (->
+                          (query :kites {:size 7})
+                          (explain)) => truthy
+                        (->
+                          (query :kites {:size 7})
+                          (count-rows)) => 2)
+               )))

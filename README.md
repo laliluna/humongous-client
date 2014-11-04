@@ -82,6 +82,20 @@ You can use them as well
         (query-hint {:name 1})
         (fetch))) 
 
+Explain the server's query plan
+
+    (with-db db
+     (->
+       (query :kites {:size 7})
+       (explain)))
+       
+Count rows on the server       
+
+    (with-db db
+     (->
+       (query :kites {:size 7})
+       (count-rows)))
+       
 Fall back to Java method calls, if something is missing
 
     (defn add-comment [cursor c]
@@ -93,6 +107,8 @@ Fall back to Java method calls, if something is missing
        (query :kites {:size 7})
        (add-comment "look at this query it is slow")
        (fetch))) 
+       
+       
 
 ## More documentation
                                                                                              

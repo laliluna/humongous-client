@@ -1,5 +1,5 @@
 (ns humongous-client.humongous
-  (:import (com.mongodb BasicDBObject DBObject DBCursor)
+  (:import (com.mongodb BasicDBObject DBObject DBCursor BasicDBList)
            (clojure.lang IPersistentVector IPersistentMap IPersistentList)
            (java.util List)
            (org.bson.types ObjectId)
@@ -53,6 +53,10 @@
   (to-clojure [map]
     (reduce (fn [m [k v]] (assoc m (keyword k) (to-clojure v))) {}
             (.entrySet map)))
+
+  BasicDBList
+  (to-clojure [v]
+    (map to-clojure v))
 
   IPersistentVector
   (to-clojure [v]
@@ -134,6 +138,12 @@
 
 (defn fetch [^DBCursor cursor]
   (doall (map to-clojure cursor)))
+
+(defn explain [^DBCursor cursor]
+  (to-clojure (.explain cursor)))
+
+(defn count-rows [^DBCursor cursor]
+  (.count cursor))
 
 (defn order-by [^DBCursor cursor order]
   (.sort cursor (to-mongo (build-order-map order))))
