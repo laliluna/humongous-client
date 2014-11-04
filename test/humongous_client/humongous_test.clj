@@ -59,5 +59,7 @@
                         (fetch-docs :kites {} :sort-by [:size :name]) =>
                         [{:_id 1 :name "blue" :size 5} {:_id 2 :name "amber" :size 7}  {:_id 3 :name "red" :size 7}]
                         (fetch-docs :kites {} :sort-by [[:size :desc] :name]) =>
-                        [{:_id 2 :name "amber" :size 7} {:_id 3 :name "red" :size 7} {:_id 1 :name "blue" :size 5} ]))))
+                        [{:_id 2 :name "amber" :size 7} {:_id 3 :name "red" :size 7} {:_id 1 :name "blue" :size 5} ]))
+         (fact "Limit number of returned rows"
+               (count (with-db db (fetch-docs :kites {} :limit 2))) => 2)))
 

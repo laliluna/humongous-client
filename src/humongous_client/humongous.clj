@@ -116,12 +116,13 @@
      Hint: :sort-by [:size] is the same as :sort-by [[:size :asc]]"
   ([coll]
    (fetch-docs coll {}))
-  ([coll query & {:keys [fields sort-by] :or {fields nil :sort-by nil}}]
+  ([coll query & {:keys [fields sort-by limit] :or {fields nil sort-by nil limit nil}}]
    (with-open [cursor (.find (get-collection coll)
                              (to-mongo query)
                              (to-mongo (build-field-map fields)))]
-     (if sort-by
-       (.sort cursor (to-mongo (build-sort-map sort-by))))
+     (cond-> cursor
+             sort-by (.sort (to-mongo (build-sort-map sort-by)))
+             limit (.limit limit))
      (map to-clojure cursor))))
 
 (defn insert!
