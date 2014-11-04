@@ -207,6 +207,18 @@
            false
            true))
 
+(defn update-or-insert!
+  "Sample:
+  -------
+  Update first matching documents with name 'blue' to name 'green' or inserts the document
+    (with-db db (update-or-insert! :kites {:name \"blue\"} {:name \"green\"}))"
+  [coll query document]
+  (.update (get-collection coll)
+           (to-mongo query)
+           (to-mongo {:$set (dissoc document :_id)})
+           true
+           false))
+
 (defn update-first!
   "Sample:
   -------
