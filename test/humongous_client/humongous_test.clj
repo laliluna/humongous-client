@@ -25,7 +25,7 @@
           (with-db db
                    (insert! :kites {:_id 1 :name "Blue"})
                    (fetch-docs :kites) => [{:_id 1 :name "Blue"}]))
-    (fact "Can insert and fetch complex documents"
+    (fact "Can insert complex documents"
           (with-db db
                    (insert! :kites {:_id 1 :name "Blue" :types {:size [1 2 3 4] :color "Blue" :price nil}})
                    (fetch-docs :kites {} :sort-by [:_id]) => [{:_id 1 :name "Blue" :types {:size [1 2 3 4] :color "Blue" :price nil}}]))
@@ -34,33 +34,30 @@
                    (fetch-docs :kites) => [{:_id 1 :name "blue"} {:_id 2 :name "red"}])))
 
   (facts "Fetching docs"
-         (against-background (before :facts (with-db db (drop! :kites))))
+         (against-background
+           (before :facts (with-db db (drop! :kites)
+                                   (insert! :kites [{:_id 1 :name "blue" :size 5}
+                                                    {:_id 2 :name "amber" :size 7}
+                                                    {:_id 3 :name "red" :size 7}]))))
          (fact "Fetch matching documents"
                (with-db db
-                        (insert! :kites {:_id 1 :name "blue"})
-                        (insert! :kites {:_id 2 :name "red"})
-                        (fetch-docs :kites {:name "red"}) => [{:_id 2 :name "red"}]))
+                        (fetch-docs :kites {:name "red"}) => [{:_id 3 :name "red" :size 7}]))
          (fact "Use Mongo query API"
                (with-db db
-                        (insert! :kites {:_id 1 :name "blue" :age 11})
-                        (insert! :kites {:_id 2 :name "red" :age 22})
-                        (fetch-docs :kites {:age {:$gt 12}}) => [{:_id 2 :name "red" :age 22}]))
+                        (fetch-docs :kites {:size {:$lt 7}}) => [{:_id 1 :name "blue" :size 5}]))
          (fact "Select fields of document"
                (with-db db
-                        (insert! :kites {:_id 1 :name "blue" :size 11 :shape "Delta"})
-                        (fetch-docs :kites {} :fields [:name :shape]) => [{:_id 1 :name "blue" :shape "Delta"}]))
+                        (first (fetch-docs :kites {} :fields [:size] :sort-by [:_id])) => {:_id 1 :size 5}))
          (fact "Order documents by fields"
                (with-db db
-                        (insert! :kites [{:_id 1 :name "blue"} {:_id 2 :name "amber"} {:_id 3 :name "red"}])
-                        (fetch-docs :kites {} :sort-by [[:name :asc]]) =>
+                        (fetch-docs :kites {} :fields [:name] :sort-by [[:name :asc]]) =>
                         [{:_id 2 :name "amber"} {:_id 1 :name "blue"} {:_id 3 :name "red"}]
-                        (fetch-docs :kites {} :sort-by [[:name :desc]]) =>
+                        (fetch-docs :kites {} :fields [:name] :sort-by [[:name :desc]]) =>
                         [{:_id 3 :name "red"} {:_id 1 :name "blue"}{:_id 2 :name "amber"}]))
          (fact "Order documents by multiple fields"
                (with-db db
-                        (insert! :kites [{:_id 1 :name "blue" :size 5} {:_id 2 :name "amber" :size 7} {:_id 3 :name "blue" :size 11}])
-                        (fetch-docs :kites {} :sort-by [:name :size]) =>
-                        [{:_id 2 :name "amber" :size 7} {:_id 1 :name "blue" :size 5} {:_id 3 :name "blue" :size 11}]
-                        (fetch-docs :kites {} :sort-by [:name [:size :desc]]) =>
-                        [{:_id 2 :name "amber" :size 7} {:_id 3 :name "blue" :size 11} {:_id 1 :name "blue" :size 5} ]))))
+                        (fetch-docs :kites {} :sort-by [:size :name]) =>
+                        [{:_id 1 :name "blue" :size 5} {:_id 2 :name "amber" :size 7}  {:_id 3 :name "red" :size 7}]
+                        (fetch-docs :kites {} :sort-by [[:size :desc] :name]) =>
+                        [{:_id 2 :name "amber" :size 7} {:_id 3 :name "red" :size 7} {:_id 1 :name "blue" :size 5} ]))))
 
