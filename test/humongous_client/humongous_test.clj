@@ -47,7 +47,12 @@
                    (insert! :kites [{:_id 1 :name "blue" :size 5} {:_id 2 :name "blue" :size 5}])
                    (replace-first! :kites {:name "blue"} {:name "green"})
                    (count (fetch-docs :kites {:name "green"})) => 1
-                   (:size (fetch-first-doc :kites {:name "green"})) => falsey)))
+                   (:size (fetch-first-doc :kites {:name "green"})) => falsey))
+    (fact "Remove matching documents"
+          (with-db db
+                   (let [kite (insert! :kites {:name "blue"})]
+                     (remove! :kites kite)
+                     (count (fetch-docs :kites)) => 0))))
 
   (facts "Fetching docs"
          (against-background

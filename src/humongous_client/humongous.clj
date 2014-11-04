@@ -62,10 +62,6 @@
   (to-clojure [v]
     (map to-clojure v))
 
-  ObjectId
-  (to-clojure [v]
-    (str v))
-
   nil
   (to-clojure [v]
     v)
@@ -234,3 +230,14 @@
            (to-mongo (dissoc data :_id))
            false
            false))
+
+(defn remove!
+  "Sample:
+  -------
+  Remove all documents with name 'blue'
+    (with-db db (remove! :kites {:name \"blue\"}))
+  Remove all documents in the collection
+    (with-db db (remove! :kites {}))"
+  [coll query]
+  (.remove (get-collection coll)
+           (to-mongo query)))
