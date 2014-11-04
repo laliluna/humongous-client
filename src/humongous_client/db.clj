@@ -24,3 +24,10 @@
   [db-uri]
   (let [uri (MongoClientURI. db-uri)]
     (.getDB (MongoClient. uri) (.getDatabase uri))))
+
+(defmacro with-open! [bindings & body]
+  `(let ~bindings
+     (try
+       ~@body
+       (finally
+         (close! ~(bindings 0))))))

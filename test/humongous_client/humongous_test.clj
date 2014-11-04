@@ -5,14 +5,8 @@
             [humongous-client.humongous :refer :all]
             [humongous-client.db :as mongodb]))
 
-(defmacro with-open! [bindings & body]
-  `(let ~bindings
-     (try
-       ~@body
-       (finally
-         (~'mongodb/close! ~(bindings 0))))))
 
-(with-open!
+(mongodb/with-open!
   [db (mongodb/create-db-client "mongodb://localhost:27017/test")]
   (facts
     (against-background (before :facts (with-db db (drop! :kites))))

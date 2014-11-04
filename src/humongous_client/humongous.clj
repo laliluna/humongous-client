@@ -73,7 +73,7 @@
   Object
   (to-clojure [v] v))
 
-(defn- get-collection [coll]
+(defn get-collection [coll]
   (assert *mongo-db-connection* "I miss an enclosing (with-db my-db ...)")
   (.getCollection *mongo-db-connection* (name coll)))
 
