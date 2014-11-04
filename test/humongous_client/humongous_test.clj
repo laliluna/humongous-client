@@ -28,7 +28,7 @@
     (fact "Can insert complex documents"
           (with-db db
                    (insert! :kites {:_id 1 :name "Blue" :types {:size [1 2 3 4] :color "Blue" :price nil}})
-                   (fetch-docs :kites {} :sort-by [:_id]) => [{:_id 1 :name "Blue" :types {:size [1 2 3 4] :color "Blue" :price nil}}]))
+                   (fetch-docs :kites {} :order-by [:_id]) => [{:_id 1 :name "Blue" :types {:size [1 2 3 4] :color "Blue" :price nil}}]))
     (fact "Can insert multiple document"
           (with-db db (insert! :kites [{:_id 1 :name "blue"} {:_id 2 :name "red"}])
                    (fetch-docs :kites) => [{:_id 1 :name "blue"} {:_id 2 :name "red"}]))
@@ -75,31 +75,45 @@
                         (fetch-docs :kites {:size {:$lt 7}}) => [{:_id 1 :name "blue" :size 5}]))
          (fact "Select fields of document"
                (with-db db
-                        (first (fetch-docs :kites {} :fields [:size] :sort-by [:_id])) => {:_id 1 :size 5}))
+                        (first (fetch-docs :kites {} :fields [:size] :order-by [:_id])) => {:_id 1 :size 5}))
          (fact "Order documents by fields"
                (with-db db
-                        (fetch-docs :kites {} :fields [:name] :sort-by [[:name :asc]]) =>
+                        (fetch-docs :kites {} :fields [:name] :order-by [[:name :asc]]) =>
                         [{:_id 2 :name "amber"} {:_id 1 :name "blue"} {:_id 3 :name "red"}]
-                        (fetch-docs :kites {} :fields [:name] :sort-by [[:name :desc]]) =>
+                        (fetch-docs :kites {} :fields [:name] :order-by [[:name :desc]]) =>
                         [{:_id 3 :name "red"} {:_id 1 :name "blue"}{:_id 2 :name "amber"}]))
          (fact "Order documents by multiple fields"
                (with-db db
-                        (fetch-docs :kites {} :sort-by [:size :name]) =>
+                        (fetch-docs :kites {} :order-by [:size :name]) =>
                         [{:_id 1 :name "blue" :size 5} {:_id 2 :name "amber" :size 7}  {:_id 3 :name "red" :size 7}]
-                        (fetch-docs :kites {} :sort-by [[:size :desc] :name]) =>
+                        (fetch-docs :kites {} :order-by [[:size :desc] :name]) =>
                         [{:_id 2 :name "amber" :size 7} {:_id 3 :name "red" :size 7} {:_id 1 :name "blue" :size 5} ]))
          (fact "Limit number of returned rows"
                (count (with-db db (fetch-docs :kites {} :limit 2))) => 2)
          (fact "Skips rows of query result"
-               (with-db db (fetch-docs :kites {} :skip 1 :sort-by [:_id] :fields [:_id])) => [{:_id 2} {:_id 3}])
+               (with-db db (fetch-docs :kites {} :skip 1 :order-by [:_id] :fields [:_id])) => [{:_id 2} {:_id 3}])
          (fact "Can add a comment to profiler output (look at the profiler output to validate)"
-               (with-db db (fetch-docs :kites {} :comment "Hello world")))
+               (with-db db (fetch-docs :kites {} :query-comment "Hello world")))
          (fact "Define batch size of cursor"
                (with-db db (fetch-docs :kites {} :batch-size 5)))
          (fact "Limit query execution time"
-               (with-db db (fetch-docs :kites {} :max-time-millis 5000)))
+               (with-db db (fetch-docs :kites {} :timeout-millis 5000)))
          (fact "Give a query hint to use an index"
                (with-db db
-                        (fetch-docs :kites {:name "blue"} :hint "name_index")
-                        (fetch-docs :kites {:name "blue"} :hint {:name 1})))))
-
+                        (ensure-index :kites {:name 1})
+                        (fetch-docs :kites {:name "blue"} :query-hint "name_1")
+                        (fetch-docs :kites {:name "blue"} :query-hint {:name 1})))
+         (fact "Chained API to allow full access"
+               (with-db db
+                        (ensure-index :kites {:name 1})
+                        (->
+                          (query :kites {:size 7})
+                          (order-by [:name])
+                          (skip 1)
+                          (limit 1)
+                          (query-comment "This query might be slow")
+                          (batch-size 10)
+                          (timeout-millis 2000)
+                          (query-hint {:name 1})
+                          (fetch)))
+               => [{:_id 3 :name "red" :size 7}])))
