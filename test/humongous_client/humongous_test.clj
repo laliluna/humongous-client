@@ -31,7 +31,23 @@
                    (fetch-docs :kites {} :sort-by [:_id]) => [{:_id 1 :name "Blue" :types {:size [1 2 3 4] :color "Blue" :price nil}}]))
     (fact "Can insert multiple document"
           (with-db db (insert! :kites [{:_id 1 :name "blue"} {:_id 2 :name "red"}])
-                   (fetch-docs :kites) => [{:_id 1 :name "blue"} {:_id 2 :name "red"}])))
+                   (fetch-docs :kites) => [{:_id 1 :name "blue"} {:_id 2 :name "red"}]))
+    (fact "Update fields in document"
+          (with-db db
+                   (insert! :kites {:_id 1 :name "blue" :size 5})
+                   (update! :kites {:name "blue"} {:name "green"})
+                   (fetch-first-doc :kites {:_id 1}) => {:_id 1 :name "green" :size 5}))
+    (fact "Update first document"
+          (with-db db
+                   (insert! :kites [{:_id 1 :name "blue" :size 5} {:_id 2 :name "blue" :size 7}])
+                   (update-first! :kites {:name "blue"} {:name "green"})
+                   (count (fetch-docs :kites {:name "green"})) => 1))
+    (fact "Replace first document"
+          (with-db db
+                   (insert! :kites [{:_id 1 :name "blue" :size 5} {:_id 2 :name "blue" :size 5}])
+                   (replace-first! :kites {:name "blue"} {:name "green"})
+                   (count (fetch-docs :kites {:name "green"})) => 1
+                   (:size (fetch-first-doc :kites {:name "green"})) => falsey)))
 
   (facts "Fetching docs"
          (against-background
