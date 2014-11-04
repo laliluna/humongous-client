@@ -28,7 +28,11 @@
     (fact "Can insert and fetch complex documents"
           (with-db db
                    (insert! :kites {:_id 1 :name "Blue" :types {:size [1 2 3 4] :color "Blue" :price nil}})
-                   (fetch-docs :kites) => [{:_id 1 :name "Blue" :types {:size [1 2 3 4] :color "Blue" :price nil}}])))
+                   (fetch-docs :kites {} :sort-by [:_id]) => [{:_id 1 :name "Blue" :types {:size [1 2 3 4] :color "Blue" :price nil}}]))
+    (fact "Can insert multiple document"
+          (with-db db (insert! :kites [{:_id 1 :name "blue"} {:_id 2 :name "red"}])
+                   (fetch-docs :kites) => [{:_id 1 :name "blue"} {:_id 2 :name "red"}])))
+
   (facts "Fetching docs"
          (against-background (before :facts (with-db db (drop! :kites))))
          (fact "Fetch matching documents"
@@ -44,5 +48,19 @@
          (fact "Select fields of document"
                (with-db db
                         (insert! :kites {:_id 1 :name "blue" :size 11 :shape "Delta"})
-                        (fetch-docs :kites {} :fields [:name :shape]) => [{:_id 1 :name "blue" :shape "Delta"}]))))
+                        (fetch-docs :kites {} :fields [:name :shape]) => [{:_id 1 :name "blue" :shape "Delta"}]))
+         (fact "Order documents by fields"
+               (with-db db
+                        (insert! :kites [{:_id 1 :name "blue"} {:_id 2 :name "amber"} {:_id 3 :name "red"}])
+                        (fetch-docs :kites {} :sort-by [[:name :asc]]) =>
+                        [{:_id 2 :name "amber"} {:_id 1 :name "blue"} {:_id 3 :name "red"}]
+                        (fetch-docs :kites {} :sort-by [[:name :desc]]) =>
+                        [{:_id 3 :name "red"} {:_id 1 :name "blue"}{:_id 2 :name "amber"}]))
+         (fact "Order documents by multiple fields"
+               (with-db db
+                        (insert! :kites [{:_id 1 :name "blue" :size 5} {:_id 2 :name "amber" :size 7} {:_id 3 :name "blue" :size 11}])
+                        (fetch-docs :kites {} :sort-by [:name :size]) =>
+                        [{:_id 2 :name "amber" :size 7} {:_id 1 :name "blue" :size 5} {:_id 3 :name "blue" :size 11}]
+                        (fetch-docs :kites {} :sort-by [:name [:size :desc]]) =>
+                        [{:_id 2 :name "amber" :size 7} {:_id 3 :name "blue" :size 11} {:_id 1 :name "blue" :size 5} ]))))
 
