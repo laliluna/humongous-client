@@ -63,5 +63,11 @@
          (fact "Limit number of returned rows"
                (count (with-db db (fetch-docs :kites {} :limit 2))) => 2)
          (fact "Skips rows of query result"
-               (with-db db (fetch-docs :kites {} :skip 1 :sort-by [:_id] :fields [:_id])) => [{:_id 2} {:_id 3}])))
+               (with-db db (fetch-docs :kites {} :skip 1 :sort-by [:_id] :fields [:_id])) => [{:_id 2} {:_id 3}])
+         (fact "Can add a comment to profiler output (look at the profiler output to validate)"
+               (with-db db (fetch-docs :kites {} :comment "Hello world")))
+         (fact "Define batch size of cursor"
+               (with-db db (fetch-docs :kites {} :batch-size 5)))
+         (fact "Limit query execution time"
+               (with-db db (fetch-docs :kites {} :max-time-millis 5000)))))
 

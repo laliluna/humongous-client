@@ -2,7 +2,8 @@
   (:import (com.mongodb BasicDBObject)
            (clojure.lang IPersistentVector IPersistentMap IPersistentList)
            (java.util List)
-           (org.bson.types ObjectId)))
+           (org.bson.types ObjectId)
+           (java.util.concurrent TimeUnit)))
 
 (def ^{:dynamic true} *mongo-db-connection* nil)
 
@@ -97,6 +98,8 @@
                       (if (= (second v) :asc) 1 -1)]
                      [v 1])) m)))))
 
+(def valid-params [:fields :sort-by :limit :skip :comment :batch-size :max-time-millis])
+
 (defn fetch-docs
   "Sample:
    --------
@@ -113,17 +116,38 @@
      (with-db db (fetch-docs :kites {} :sort-by [:size :name]))
      (with-db db (fetch-docs :kites {} :sort-by [[:size :desc] :name]))
 
-     Hint: :sort-by [:size] is the same as :sort-by [[:size :asc]]"
+     Hint: :sort-by [:size] is the same as :sort-by [[:size :asc]]
+
+   Skip and limit rows:
+     Skip first row, then return 5 rows
+     (with-db db (fetch-docs :kites {} :skip 1 :limit 5))
+
+   Add a query comment shown in Mongo profiler output
+     (with-db db (fetch-docs :kites {} :comment \"Look here, this is slow\"))
+
+   Specify cursor batch size
+     (with-db db (fetch-docs :kites {} :batch-size 5))
+
+     Hint: See DBCursor.batchSize to understand negative values
+
+   Limit query execution time
+     (with-db db (fetch-docs :kites {} :max-time-millis 5000))"
   ([coll]
    (fetch-docs coll {}))
-  ([coll query & {:keys [fields sort-by limit skip] :or {fields nil sort-by nil limit nil skip nil}}]
+  ([coll query & {:keys [fields sort-by limit skip comment batch-size max-time-millis] :as params
+                  :or {fields nil batch-size nil sort-by nil limit nil skip nil comment nil max-time-millis nil}}]
+   (if-not (empty? (apply dissoc params valid-params))
+     (throw (IllegalArgumentException. (str "Unsupported params: " (keys (apply dissoc params valid-params))))))
    (with-open [cursor (.find (get-collection coll)
                              (to-mongo query)
                              (to-mongo (build-field-map fields)))]
      (cond-> cursor
              sort-by (.sort (to-mongo (build-sort-map sort-by)))
              limit (.limit limit)
-             skip (.skip skip))
+             skip (.skip skip)
+             comment (.comment comment)
+             batch-size (.batchSize batch-size)
+             max-time-millis (.maxTime max-time-millis TimeUnit/MILLISECONDS))
      (map to-clojure cursor))))
 
 (defn insert!
