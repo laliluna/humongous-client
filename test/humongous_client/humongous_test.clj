@@ -61,5 +61,7 @@
                         (fetch-docs :kites {} :sort-by [[:size :desc] :name]) =>
                         [{:_id 2 :name "amber" :size 7} {:_id 3 :name "red" :size 7} {:_id 1 :name "blue" :size 5} ]))
          (fact "Limit number of returned rows"
-               (count (with-db db (fetch-docs :kites {} :limit 2))) => 2)))
+               (count (with-db db (fetch-docs :kites {} :limit 2))) => 2)
+         (fact "Skips rows of query result"
+               (with-db db (fetch-docs :kites {} :skip 1 :sort-by [:_id] :fields [:_id])) => [{:_id 2} {:_id 3}])))
 
