@@ -1,4 +1,4 @@
-(ns humongous.bulk
+(ns humongous.command
   (:import (com.mongodb DBObject DBCollection WriteConcern BasicDBObject))
   (:require [humongous.humongous :as h]))
 
