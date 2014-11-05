@@ -1,5 +1,5 @@
-(ns humongous-client.humongous
-  (:import (com.mongodb BasicDBObject DBObject DBCursor BasicDBList)
+(ns humongous.humongous
+  (:import (com.mongodb BasicDBObject DBObject DBCursor BasicDBList WriteConcern)
            (clojure.lang IPersistentVector IPersistentMap IPersistentList)
            (java.util List)
            (org.bson.types ObjectId)
@@ -223,6 +223,14 @@
              query-hint_ (query-hint query-hint_)
              true (fetch)))))
 
+(def write-concerns
+  {:acknowledged WriteConcern/ACKNOWLEDGED
+   :unacknowledged WriteConcern/UNACKNOWLEDGED
+   :fsynced WriteConcern/FSYNCED
+   :journaled WriteConcern/JOURNALED
+   :replica-acknowledged WriteConcern/REPLICA_ACKNOWLEDGED
+   :majority WriteConcern/MAJORITY})
+
 (defn insert!
   "Sample:
   -------
@@ -239,51 +247,45 @@
              ^List (if (or (vector? document) (seq? document)) document (list document)))
     (to-clojure document)))
 
-(defn update!
+(defn- ensure-id [{:keys [_id]}]
+  (if-not _id (throw (IllegalArgumentException. "A document update requires an _id"))))
+
+(defn update-fields!
   "Sample:
   -------
-  Update all documents with name 'blue' to name 'green'
-    (with-db db (update! :kites {:name \"blue\"} {:name \"green\"}))"
-  [coll query data]
+  Update the field name of a document to name 'green'
+    (with-db db (update-fields! :kites {:_id 123} {:name \"green\"}))"
+  [coll document data]
+  (ensure-id document)
   (.update (get-collection coll)
-           (to-mongo query)
+           (to-mongo {:_id (:_id document)})
            (to-mongo {:$set (dissoc data :_id)})
            false
-           true))
+           false))
 
 (defn update-or-insert!
   "Sample:
   -------
-  Update first matching documents with name 'blue' to name 'green' or inserts the document
-    (with-db db (update-or-insert! :kites {:name \"blue\"} {:name \"green\"}))"
-  [coll query document]
+  Update document if exist, else insert
+    (with-db db (update-or-insert! :kites {:_id 1 :name \"blue\"}))"
+  [coll document]
+  (ensure-id document)
   (.update (get-collection coll)
-           (to-mongo query)
-           (to-mongo {:$set (dissoc document :_id)})
+           (to-mongo {:_id (:_id document)})
+           (to-mongo (dissoc document :_id))
            true
            false))
 
-(defn update-first!
+(defn update!
   "Sample:
   -------
-  Update first matching document with name 'blue' to name 'green'
-   (with-db db (update-first! :kites {:name \"blue\"} {:name \"green\"}))"
-  [coll query data]
+  Update and replace an existing document
+  (with-db db (update! :kites {:_id 123 :name \"blue\"}))"
+  [coll {:keys [_id] :as document}]
+  (ensure-id document)
   (.update (get-collection coll)
-           (to-mongo query)
-           (to-mongo {:$set (dissoc data :_id)})
-           false
-           false))
-
-(defn replace-first!
-  "Sample:
-  -------
-  Replace first matching document with name 'blue' to contain only the field {:name \"green\"}
-  (with-db db (replace-first! :kites {:name \"blue\"} {:name \"green\"}))"
-  [coll query data]
-  (.update (get-collection coll)
-           (to-mongo query)
-           (to-mongo (dissoc data :_id))
+           (to-mongo {:_id (:_id document)})
+           (to-mongo (dissoc document :_id))
            false
            false))
 
@@ -291,12 +293,11 @@
   "Sample:
   -------
   Remove all documents with name 'blue'
-    (with-db db (remove! :kites {:name \"blue\"}))
-  Remove all documents in the collection
-    (with-db db (remove! :kites {}))"
-  [coll query]
+    (with-db db (remove! :kites {:_id 123 }))"
+  [coll document]
+  (ensure-id document)
   (.remove (get-collection coll)
-           (to-mongo query)))
+           (to-mongo {:_id (:_id document)})))
 
 (defn ensure-index
   "Sample:

@@ -1,6 +1,6 @@
-(ns humongous-client.bulk
+(ns humongous.bulk
   (:import (com.mongodb DBObject DBCollection WriteConcern BasicDBObject))
-  (:require [humongous-client.humongous :as h]))
+  (:require [humongous.humongous :as h]))
 
 
 (defn unordered-bulk [coll]

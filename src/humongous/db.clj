@@ -1,4 +1,4 @@
-(ns humongous-client.db
+(ns humongous.db
   (:import (com.mongodb MongoClient MongoClientURI DB)))
 
 (defprotocol MongoConnection

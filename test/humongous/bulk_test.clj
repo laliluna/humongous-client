@@ -1,12 +1,12 @@
-(ns humongous-client.bulk-test
-  (:require [humongous-client.bulk :refer [unordered-bulk ordered-bulk insert
+(ns humongous.bulk-test
+  (:require [humongous.bulk :refer [unordered-bulk ordered-bulk insert
                                            update update-first replace-first
                                            update-or-insert update-first-or-insert replace-first-or-insert
                                            remove-doc remove-one-doc
                                            execute!]]
             [midje.sweet :refer :all]
-            [humongous-client.humongous :as m]
-            [humongous-client.db :as mongodb]))
+            [humongous.humongous :as m]
+            [humongous.db :as mongodb]))
 
 (mongodb/with-open!
   [db (mongodb/create-db-client "mongodb://localhost:27017/test")]

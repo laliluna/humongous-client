@@ -1,15 +1,22 @@
 # humongous-client
 
-Humongous is a client with a clean API for Mongo DB. The design intention is to offer as little choice as possible, but
-all the power you need.
+Humongous, humongous is your wishful servant to help you speaking to dear Mongo DB.
+
+Simplicity in mind, but right beneath the surface, access to all the powers of the Java driver.
+
+Expect a document API to make a document come to existence, change its appearance or decease. 
+
+But this is not all humongous. A servant is ready, to be sent to the database to change what can be found,
+  to remove what should be hidden, or to add what is missing. 
+  
+And humongous, if this is not yet enough, a bulk of servants is there to serve in parallel
+  or to transport many of your wishes and fulfill them one by one.
  
-It wraps the Java driver in a way, that it can expose full access if needed.
- 
-## Quick tour in the REPL
+## Quick tour of document API in the REPL
 
 Open a connection to a database
 
-    (require '[humongous-client.db :as mongodb])
+    (require '[humongous.db :as mongodb])
 
     (def db (mongodb/create-db-client "mongodb://localhost:27017/mydatabase"))
     
@@ -18,36 +25,35 @@ Open a connection to a database
 
 Wrap everything in *with-db*
 
-    (require '[humongous-client.humongous :refer :all])
+    (require '[humongous.humongous :refer :all])
 
-    (with-db db (insert! :kites {:name "Blue"}))
 
     (with-db db 
       (insert! ...) 
       (update! ...) 
       (fetch-docs ...))
     
-**Insert** documents
+**Insert** one or many documents
     
+    (with-db db (insert! :kites {:name "Blue"}))
+
     (with-db db 
       (insert! :kites [{:_id 1 :name "blue"} {:_id 2 :name "red"}]))
 
-**Update** fields of one or multiple documents, **replace** documents
+**Update** fields of a document or the document as a whole
                          
     (with-db db 
       ;---> Update field name to green of all matching documents
-      (update! :kites {:name "blue"} {:name "green"})
+      (update! :kites {:_id 123 :name "blue"} )
       
       ;---> Update field name to green of first matching document
-      (update-first! :kites {:name "blue"} {:name "green"})
+      (update-first! :kites {:_id 123 :name "blue"} {:name "green"})
 
-      ;---> Replace document
-      (replace-first! :kites {:name "blue"} {:name "green"}))
 
-**Remove** documents with name blue
+**Remove** document with id 123
       
       (with-db db
-        (remove! :kites {:name "blue"))
+        (remove! :kites {:_id 123 :name "blue"))
                                     
 **Fetch** documents
 

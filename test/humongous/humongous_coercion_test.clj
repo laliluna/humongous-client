@@ -1,8 +1,8 @@
-(ns humongous-client.humongous-coercion-test
+(ns humongous.humongous-coercion-test
   (:import (com.mongodb BasicDBObject)
            (org.bson.types ObjectId))
   (:require [midje.sweet :refer :all]
-            [humongous-client.humongous :refer :all]))
+            [humongous.humongous :refer :all]))
 
 (fact "Convert map to a Mongo"
       (let [v (to-mongo {:foo "abc" :bar 1})]

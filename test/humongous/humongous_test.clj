@@ -1,9 +1,9 @@
-(ns humongous-client.humongous-test
+(ns humongous.humongous-test
   (:import (com.mongodb BasicDBObject)
            (org.bson.types ObjectId))
   (:require [midje.sweet :refer :all]
-            [humongous-client.humongous :refer :all]
-            [humongous-client.db :as mongodb]))
+            [humongous.humongous :refer :all]
+            [humongous.db :as mongodb]))
 
 
 (mongodb/with-open!
@@ -29,27 +29,27 @@
     (fact "Update fields in document"
           (with-db db
                    (insert! :kites {:_id 1 :name "blue" :size 5})
-                   (update! :kites {:name "blue"} {:name "green"})
+                   (update-fields! :kites {:_id 1} {:name "green"})
                    (fetch-first-doc :kites {:_id 1}) => {:_id 1 :name "green" :size 5}))
-    (fact "Update first document"
+    (fact "Reject to update or remove without _id"
           (with-db db
-                   (insert! :kites [{:_id 1 :name "blue" :size 5} {:_id 2 :name "blue" :size 7}])
-                   (update-first! :kites {:name "blue"} {:name "green"})
-                   (count (fetch-docs :kites {:name "green"})) => 1))
-    (fact "Replace first document"
+                   (update-fields! :kites {:foo "abc"} {:name "green"}) => (throws IllegalArgumentException)
+                   (update! :kites {:foo "abc"}) => (throws IllegalArgumentException)
+                   (remove! :kites {:name "green"}) => (throws IllegalArgumentException)))
+    (fact "Update document"
           (with-db db
                    (insert! :kites [{:_id 1 :name "blue" :size 5} {:_id 2 :name "blue" :size 5}])
-                   (replace-first! :kites {:name "blue"} {:name "green"})
+                   (update! :kites {:_id 1 :name "green"})
                    (count (fetch-docs :kites {:name "green"})) => 1
                    (:size (fetch-first-doc :kites {:name "green"})) => falsey))
     (fact "Update or insert document"
           (with-db db
                    (insert! :kites {:_id 1 :name "blue" :size 5})
-                   (update-or-insert! :kites {:name "red"} {:name "red"})
-                   (count (fetch-docs :kites {:name "red"})) => 1
-                   (update-or-insert! :kites {:name "blue"} {:name "green"})
-                   (fetch-first-doc :kites {:name "green"}) => {:_id 1 :name "green" :size 5}))
-    (fact "Remove matching documents"
+                   (update-or-insert! :kites {:_id 2 :name "red"})
+                   (fetch-first-doc :kites {:name "red"}) => {:_id 2 :name "red"}
+                   (update-or-insert! :kites {:_id 1 :name "green"})
+                   (fetch-first-doc :kites {:name "green"}) => {:_id 1 :name "green"}))
+    (fact "Remove document"
           (with-db db
                    (let [kite (insert! :kites {:name "blue"})]
                      (remove! :kites kite)
@@ -75,13 +75,13 @@
                         (fetch-docs :kites {} :fields [:name] :order-by [[:name :asc]]) =>
                         [{:_id 2 :name "amber"} {:_id 1 :name "blue"} {:_id 3 :name "red"}]
                         (fetch-docs :kites {} :fields [:name] :order-by [[:name :desc]]) =>
-                        [{:_id 3 :name "red"} {:_id 1 :name "blue"}{:_id 2 :name "amber"}]))
+                        [{:_id 3 :name "red"} {:_id 1 :name "blue"} {:_id 2 :name "amber"}]))
          (fact "Order documents by multiple fields"
                (with-db db
                         (fetch-docs :kites {} :order-by [:size :name]) =>
-                        [{:_id 1 :name "blue" :size 5} {:_id 2 :name "amber" :size 7}  {:_id 3 :name "red" :size 7}]
+                        [{:_id 1 :name "blue" :size 5} {:_id 2 :name "amber" :size 7} {:_id 3 :name "red" :size 7}]
                         (fetch-docs :kites {} :order-by [[:size :desc] :name]) =>
-                        [{:_id 2 :name "amber" :size 7} {:_id 3 :name "red" :size 7} {:_id 1 :name "blue" :size 5} ]))
+                        [{:_id 2 :name "amber" :size 7} {:_id 3 :name "red" :size 7} {:_id 1 :name "blue" :size 5}]))
          (fact "Limit number of returned rows"
                (count (with-db db (fetch-docs :kites {} :limit 2))) => 2)
          (fact "Skips rows of query result"

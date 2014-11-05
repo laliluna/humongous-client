@@ -1,7 +1,7 @@
-(ns humongous-client.db-test
+(ns humongous.db-test
   (:import (com.mongodb MongoClient))
   (:require [midje.sweet :refer :all]
-            [humongous-client.db :refer :all]))
+            [humongous.db :refer :all]))
 
 (fact "Connect and close database connection"
       (let [client (create-client)]
