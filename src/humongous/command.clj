@@ -61,8 +61,9 @@
 (defn execute!
   ([bulk]
    (.execute bulk))
-  ;([bulk write-concern]  (.execute bulk (write-concern m/write-concern-map))))
-  )
+  ([bulk write-concern]
+   (.execute bulk (h/get-write-concern write-concern))))
+
 (defn remove-doc [bulk query]
   (.remove
     (find-doc bulk query))

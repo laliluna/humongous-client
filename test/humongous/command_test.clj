@@ -37,8 +37,7 @@
                (h/with-db db
                           (-> (unordered-bulk :dummy)
                               (insert {:name "Joe"})
-                              ; (execute! :fsynced) FIXME
-                              (execute!))))
+                              (execute! :fsynced))))
          (fact "Can use an ordered bulk as well"
                (h/with-db db
                           (-> (ordered-bulk :dummy)

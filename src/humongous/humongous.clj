@@ -122,11 +122,11 @@
   (let [mongo-coll (get-collection coll)]
     (to-clojure
       (.findOne mongo-coll
-               ^DBObject (to-mongo query)
-               ^DBObject (to-mongo (build-field-map fields))
-               ^DBObject (to-mongo (build-order-map order-by))
-               (.getReadPreference mongo-coll)
-               ))))
+                ^DBObject (to-mongo query)
+                ^DBObject (to-mongo (build-field-map fields))
+                ^DBObject (to-mongo (build-order-map order-by))
+                (.getReadPreference mongo-coll)
+                ))))
 
 (defn query
   ([coll q]
@@ -209,7 +209,7 @@
    (fetch-docs coll {}))
   ([coll q & {fields :fields order-by_ :order-by limit_ :limit skip_ :skip query-comment_ :query-comment
               batch-size_ :batch-size timeout-millis_ :timeout-millis query-hint_ :query-hint :as params
-                  :or   {fields nil batch-size nil order-by nil limit nil skip nil query-comment nil timeout-millis nil query-hint nil}}]
+              :or   {fields nil batch-size nil order-by nil limit nil skip nil query-comment nil timeout-millis nil query-hint nil}}]
    (if-not (empty? (apply dissoc params valid-params))
      (throw (IllegalArgumentException. (str "Unsupported params: " (keys (apply dissoc params valid-params))))))
    (with-open [cursor (query coll q fields)]
@@ -231,6 +231,18 @@
    :replica-acknowledged WriteConcern/REPLICA_ACKNOWLEDGED
    :majority WriteConcern/MAJORITY})
 
+(defn get-write-concern
+  ([write-concern]
+   (if-let [concern (get write-concerns write-concern)]
+     concern
+     (throw (IllegalArgumentException. (str "Unknown write concern: " write-concern)))))
+  ([coll write-concern]
+   (if (or (nil? write-concern) (= write-concern :default-write-concern))
+     (.getWriteConcern (get-collection coll))
+     (if-let [concern (get write-concerns write-concern)]
+       concern
+       (throw (IllegalArgumentException. (str "Unknown write concern: " write-concern)))))))
+
 (defn insert!
   "Sample:
   -------
@@ -240,12 +252,20 @@
       (insert! :wind {:speed 5}))
 
     Insert multiple:
-      (with-db db (insert! :kites [{:name \"blue\"} {:name \"red\"}])"
-  [coll data]
-  (let [document (to-mongo data)]
-    (.insert (get-collection coll)
-             ^List (if (or (vector? document) (seq? document)) document (list document)))
-    (to-clojure document)))
+      (with-db db (insert! :kites [{:name \"blue\"} {:name \"red\"}])
+
+    Use a Mongo write concern
+    (with-db db (insert! :kites {:name \"blue\"} :acknowledged))"
+  ([coll data]
+   (insert! coll data :default-write-concern))
+  ([coll data write-concern]
+   (let [document (to-mongo data)]
+     (.insert (get-collection coll)
+              ^List (if (or (vector? document) (seq? document))
+                      document
+                      (list document))
+              (get-write-concern coll write-concern))
+     (to-clojure document))))
 
 (defn- ensure-id [{:keys [_id]}]
   (if-not _id (throw (IllegalArgumentException. "A document update requires an _id"))))
@@ -254,50 +274,72 @@
   "Sample:
   -------
   Update the field name of a document to name 'green'
-    (with-db db (update-fields! :kites {:_id 123} {:name \"green\"}))"
-  [coll document data]
-  (ensure-id document)
-  (.update (get-collection coll)
-           (to-mongo {:_id (:_id document)})
-           (to-mongo {:$set (dissoc data :_id)})
-           false
-           false))
+    (with-db db (update-fields! :kites {:_id 123} {:name \"green\"}))
+
+  Use a Mongo write concern
+    (update-fields! :kites {:_id 1} {:name \"green\"} :journaled)"
+  ([coll document data]
+   (update-fields! coll document data :default-write-concern))
+  ([coll document data write-concern]
+   (ensure-id document)
+   (.update (get-collection coll)
+            (to-mongo {:_id (:_id document)})
+            (to-mongo {:$set (dissoc data :_id)})
+            false
+            false
+            (get-write-concern coll write-concern))))
 
 (defn update-or-insert!
   "Sample:
   -------
   Update document if exist, else insert
-    (with-db db (update-or-insert! :kites {:_id 1 :name \"blue\"}))"
-  [coll document]
-  (ensure-id document)
-  (.update (get-collection coll)
-           (to-mongo {:_id (:_id document)})
-           (to-mongo (dissoc document :_id))
-           true
-           false))
+    (with-db db (update-or-insert! :kites {:_id 1 :name \"blue\"}))
+
+  Use a Mongo write concern
+    (with-db db (update-or-insert! :kites {:_id 1 :name \"blue\"} :journaled))"
+  ([coll document]
+   (update-or-insert! coll document :default-write-concern))
+  ([coll document write-concern]
+   (ensure-id document)
+   (.update (get-collection coll)
+            (to-mongo {:_id (:_id document)})
+            (to-mongo (dissoc document :_id))
+            true
+            false
+            (get-write-concern coll write-concern))))
 
 (defn update!
   "Sample:
   -------
   Update and replace an existing document
-  (with-db db (update! :kites {:_id 123 :name \"blue\"}))"
-  [coll {:keys [_id] :as document}]
-  (ensure-id document)
-  (.update (get-collection coll)
-           (to-mongo {:_id (:_id document)})
-           (to-mongo (dissoc document :_id))
-           false
-           false))
+    (with-db db (update! :kites {:_id 123 :name \"blue\"}))
+  Use a Mongo write concern
+    (with-db db (update! :kites {:_id 123 :name \"blue\"} :journaled))"
+  ([coll document]
+   (update! coll document :default-write-concern))
+  ([coll document write-concern]
+   (ensure-id document)
+   (.update (get-collection coll)
+            (to-mongo {:_id (:_id document)})
+            (to-mongo (dissoc document :_id))
+            false
+            false
+            (get-write-concern coll write-concern))))
 
 (defn remove!
   "Sample:
   -------
   Remove all documents with name 'blue'
-    (with-db db (remove! :kites {:_id 123 }))"
-  [coll document]
-  (ensure-id document)
-  (.remove (get-collection coll)
-           (to-mongo {:_id (:_id document)})))
+    (with-db db (remove! :kites {:_id 123 }))
+  Use a Mongo write concern
+    (with-db db (remove! :kites {:_id 123 } :journaled))"
+  ([coll document]
+   (remove! coll document :default-write-concern))
+  ([coll document write-concern]
+   (ensure-id document)
+   (.remove (get-collection coll)
+            (to-mongo {:_id (:_id document)})
+            (get-write-concern coll write-concern))))
 
 (defn ensure-index
   "Sample:

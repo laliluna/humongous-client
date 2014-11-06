@@ -26,6 +26,8 @@
     (fact "Can insert multiple document"
           (with-db db (insert! :kites [{:_id 1 :name "blue"} {:_id 2 :name "red"}])
                    (fetch-docs :kites) => [{:_id 1 :name "blue"} {:_id 2 :name "red"}]))
+    (fact "Use a write concern, when inserting"
+          (with-db db (insert! :kites {:name "blue"} :acknowledged)) => truthy)
     (fact "Update fields in document"
           (with-db db
                    (insert! :kites {:_id 1 :name "blue" :size 5})
@@ -38,10 +40,9 @@
                    (remove! :kites {:name "green"}) => (throws IllegalArgumentException)))
     (fact "Update document"
           (with-db db
-                   (insert! :kites [{:_id 1 :name "blue" :size 5} {:_id 2 :name "blue" :size 5}])
+                   (insert! :kites [{:_id 1 :name "blue" :field-to-lose-after-update 5}])
                    (update! :kites {:_id 1 :name "green"})
-                   (count (fetch-docs :kites {:name "green"})) => 1
-                   (:size (fetch-first-doc :kites {:name "green"})) => falsey))
+                   (fetch-first-doc :kites {:name "green"}) => {:_id 1 :name "green"}))
     (fact "Update or insert document"
           (with-db db
                    (insert! :kites {:_id 1 :name "blue" :size 5})
@@ -53,7 +54,16 @@
           (with-db db
                    (let [kite (insert! :kites {:name "blue"})]
                      (remove! :kites kite)
-                     (count (fetch-docs :kites)) => 0))))
+                     (count (fetch-docs :kites)) => 0)))
+    (fact "Use write concerns on update and remove"
+          (with-db db
+                   (insert! :kites {:_id 1 :name "blue" :size 5})
+                   (update-fields! :kites {:_id 1} {:name "green"} :journaled) => truthy
+                   (update! :kites {:_id 1 :name "red"} :unacknowledged)
+                   (remove! :kites {:_id 1} :acknowledged)))
+    (fact "Fail on wrong write concern"
+          (with-db db
+                   (update! :kites {:_id 1 :name "red"} :bad-write-concern) => (throws IllegalArgumentException))))
 
   (facts "Fetching docs"
          (against-background
