@@ -69,6 +69,57 @@ Wrap everything in *with-db*
     ;---> Select the request fields and sort the result
     (with-db db (fetch-docs :kites {:name "blue"} :fields [:name] :order-by [[:name :desc]]))
 
+## Optimistic locking for the document API
+
+Update and remove operation check only the _id by default. If you wrap the operation with *(optimistic ..)*,
+ the fields *_id and _version* are checked. If the *_version* is different, or the document is missing,
+  the operation return false, else it bumps up the version in one go and returns the *WriteResult*.
+ 
+    (with-db db
+     (optimistic (update! :kites {:_id 1 :_version 1}))
+     ; -> false 
+     ; no kite no update
+     
+     (insert! :kites {:_id 1 :name "blue" :_version 2})
+     (optimistic (update! :kites {:_id 1 :_version 1}))
+     ; -> false 
+     ; wrong version
+     
+     (optimistic (update! :kites {:_id 1 :name "red" :_version 1}))
+     ; -> #<WriteResult { "serverUsed" : "localhost:27017" , "ok" : 1 , "n" : 1}>
+     ; success, version is bumped up as well
+     (fetch-first-doc :kites {})
+     ; -> {:_id 1 :name "red" :_version 2}
+                                                        
+## Write concerns
+ 
+The Mongo DB support various write concerns. For example to guaranty that the document is written to the primary and one
+replicated DB, or to the majority, or ...
+
+You can find the supported write concerns in: *humongous.db#write-concerns*
+
+    (with-db db
+      (insert! :kites {:_id 1 :name "blue" :size 5})
+      (update! :kites {:_id 1 :name "red"} :unacknowledged))
+      
+Write concerns are supported for
+      
+- insert!
+- update!
+- update-fields!
+- remove!
+
+If no concern is specified, the write concern is taken from the collection, the database or the connection.
+
+Mongos default is :unacknowledged
+
+You can specify a default concern while connecting
+    
+    (def db (create-db-client "mongodb://localhost:27017/test" :write-concern :acknowledged))    
+    
+## Command API
+
+
 ## Internal API
  
 *(fetch-docs ...)* uses chained function calls internally, which operate mostly on the *DBCursor*. 

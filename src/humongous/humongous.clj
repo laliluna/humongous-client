@@ -3,7 +3,8 @@
            (clojure.lang IPersistentVector IPersistentMap IPersistentList)
            (java.util List)
            (org.bson.types ObjectId)
-           (java.util.concurrent TimeUnit)))
+           (java.util.concurrent TimeUnit))
+  (:require [humongous.db :refer [write-concerns translate-write-concern]]))
 
 (def ^{:dynamic true} *mongo-db-connection* nil)
 
@@ -207,9 +208,9 @@
        (fetch-docs :kites {:name \"blue\"} :query-hint {:name 1}))"
   ([coll]
    (fetch-docs coll {}))
-  ([coll q & {fields :fields order-by_ :order-by limit_ :limit skip_ :skip query-comment_ :query-comment
+  ([coll q & {fields      :fields order-by_ :order-by limit_ :limit skip_ :skip query-comment_ :query-comment
               batch-size_ :batch-size timeout-millis_ :timeout-millis query-hint_ :query-hint :as params
-              :or   {fields nil batch-size nil order-by nil limit nil skip nil query-comment nil timeout-millis nil query-hint nil}}]
+              :or         {fields nil batch-size nil order-by nil limit nil skip nil query-comment nil timeout-millis nil query-hint nil}}]
    (if-not (empty? (apply dissoc params valid-params))
      (throw (IllegalArgumentException. (str "Unsupported params: " (keys (apply dissoc params valid-params))))))
    (with-open [cursor (query coll q fields)]
@@ -223,25 +224,15 @@
              query-hint_ (query-hint query-hint_)
              true (fetch)))))
 
-(def write-concerns
-  {:acknowledged WriteConcern/ACKNOWLEDGED
-   :unacknowledged WriteConcern/UNACKNOWLEDGED
-   :fsynced WriteConcern/FSYNCED
-   :journaled WriteConcern/JOURNALED
-   :replica-acknowledged WriteConcern/REPLICA_ACKNOWLEDGED
-   :majority WriteConcern/MAJORITY})
+
 
 (defn get-write-concern
   ([write-concern]
-   (if-let [concern (get write-concerns write-concern)]
-     concern
-     (throw (IllegalArgumentException. (str "Unknown write concern: " write-concern)))))
+   (translate-write-concern write-concern))
   ([coll write-concern]
    (if (or (nil? write-concern) (= write-concern :default-write-concern))
      (.getWriteConcern (get-collection coll))
-     (if-let [concern (get write-concerns write-concern)]
-       concern
-       (throw (IllegalArgumentException. (str "Unknown write concern: " write-concern)))))))
+     (translate-write-concern write-concern))))
 
 (defn insert!
   "Sample:
@@ -340,6 +331,52 @@
    (.remove (get-collection coll)
             (to-mongo {:_id (:_id document)})
             (get-write-concern coll write-concern))))
+
+(defn ensure-version [{:keys [_version]}]
+  (if-not _version (throw (IllegalArgumentException. "_version field is required for optimistic locking"))))
+
+(defn update-optimistic-lock!
+  "Used internally by (optimistic ...)"
+  ([coll old-document data]
+   (update-optimistic-lock! coll old-document data :default-write-concern))
+  ([coll {:keys [_id _version] :as old-document} data write-concern]
+   (ensure-id old-document)
+   (ensure-version old-document)
+   (let [r (.update (get-collection coll)
+                    (to-mongo {:_id _id :_version _version})
+                    (to-mongo {:$set (assoc (dissoc data :_id) :_version (inc _version))})
+                    false
+                    false
+                    (get-write-concern coll write-concern))]
+     (if (= 0 (.getN r))
+       false
+       r))))
+
+(defn remove-optimistic-lock!
+  "Used internally by (optimistic ...)"
+  ([coll document]
+   (remove-optimistic-lock! coll document :default-write-concern))
+  ([coll {:keys [_id _version] :as document} write-concern]
+   (ensure-id document)
+   (ensure-version document)
+   (let [r (.remove (get-collection coll)
+                  (to-mongo {:_id _id :_version _version})
+                  (get-write-concern coll write-concern))]
+     (if (= 0 (.getN r))
+       false
+       r))))
+
+(defmacro optimistic [[fn & args]]
+  `(cond (= update-fields! ~fn)
+         (update-optimistic-lock! ~@args)
+         (= update! ~fn)
+         (update-optimistic-lock! ~(first args)
+                                ~(second args)
+                                ~(second args)
+                                ~@(drop 2 args))
+         (= remove! ~fn)
+         (remove-optimistic-lock! ~@args)
+         :else (throw (IllegalArgumentException. (str "Optimistic lock is not supported for fn: " #'~fn)))))
 
 (defn ensure-index
   "Sample:

@@ -8,63 +8,83 @@
 
 (mongodb/with-open!
   [db (mongodb/create-db-client "mongodb://localhost:27017/test")]
-  (facts
-    (against-background (before :facts (with-db db (drop! :kites))))
-    (fact "Can insert document"
-          (let [v (with-db db (insert! :kites {:name "Blue"}))]
-            v => (contains {:name "Blue"})
-            (:_id v) => truthy))
+  (facts "Document API"
+         (against-background (before :facts (with-db db (drop! :kites))))
+         (fact "Can insert document"
+               (let [v (with-db db (insert! :kites {:name "Blue"}))]
+                 v => (contains {:name "Blue"})
+                 (:_id v) => truthy))
 
-    (fact "Can fetch inserted documents"
-          (with-db db
-                   (insert! :kites {:_id 1 :name "Blue"})
-                   (fetch-docs :kites) => [{:_id 1 :name "Blue"}]))
-    (fact "Can insert complex documents"
-          (with-db db
-                   (insert! :kites {:_id 1 :name "Blue" :types {:size [1 2 3 4] :color "Blue" :price nil}})
-                   (fetch-docs :kites {} :order-by [:_id]) => [{:_id 1 :name "Blue" :types {:size [1 2 3 4] :color "Blue" :price nil}}]))
-    (fact "Can insert multiple document"
-          (with-db db (insert! :kites [{:_id 1 :name "blue"} {:_id 2 :name "red"}])
-                   (fetch-docs :kites) => [{:_id 1 :name "blue"} {:_id 2 :name "red"}]))
-    (fact "Use a write concern, when inserting"
-          (with-db db (insert! :kites {:name "blue"} :acknowledged)) => truthy)
-    (fact "Update fields in document"
-          (with-db db
-                   (insert! :kites {:_id 1 :name "blue" :size 5})
-                   (update-fields! :kites {:_id 1} {:name "green"})
-                   (fetch-first-doc :kites {:_id 1}) => {:_id 1 :name "green" :size 5}))
-    (fact "Reject to update or remove without _id"
-          (with-db db
-                   (update-fields! :kites {:foo "abc"} {:name "green"}) => (throws IllegalArgumentException)
-                   (update! :kites {:foo "abc"}) => (throws IllegalArgumentException)
-                   (remove! :kites {:name "green"}) => (throws IllegalArgumentException)))
-    (fact "Update document"
-          (with-db db
-                   (insert! :kites [{:_id 1 :name "blue" :field-to-lose-after-update 5}])
-                   (update! :kites {:_id 1 :name "green"})
-                   (fetch-first-doc :kites {:name "green"}) => {:_id 1 :name "green"}))
-    (fact "Update or insert document"
-          (with-db db
-                   (insert! :kites {:_id 1 :name "blue" :size 5})
-                   (update-or-insert! :kites {:_id 2 :name "red"})
-                   (fetch-first-doc :kites {:name "red"}) => {:_id 2 :name "red"}
-                   (update-or-insert! :kites {:_id 1 :name "green"})
-                   (fetch-first-doc :kites {:name "green"}) => {:_id 1 :name "green"}))
-    (fact "Remove document"
-          (with-db db
-                   (let [kite (insert! :kites {:name "blue"})]
-                     (remove! :kites kite)
-                     (count (fetch-docs :kites)) => 0)))
-    (fact "Use write concerns on update and remove"
-          (with-db db
-                   (insert! :kites {:_id 1 :name "blue" :size 5})
-                   (update-fields! :kites {:_id 1} {:name "green"} :journaled) => truthy
-                   (update! :kites {:_id 1 :name "red"} :unacknowledged)
-                   (remove! :kites {:_id 1} :acknowledged)))
-    (fact "Fail on wrong write concern"
-          (with-db db
-                   (update! :kites {:_id 1 :name "red"} :bad-write-concern) => (throws IllegalArgumentException))))
-
+         (fact "Can fetch inserted documents"
+               (with-db db
+                        (insert! :kites {:_id 1 :name "Blue"})
+                        (fetch-docs :kites) => [{:_id 1 :name "Blue"}]))
+         (fact "Can insert complex documents"
+               (with-db db
+                        (insert! :kites {:_id 1 :name "Blue" :types {:size [1 2 3 4] :color "Blue" :price nil}})
+                        (fetch-docs :kites {} :order-by [:_id]) => [{:_id 1 :name "Blue" :types {:size [1 2 3 4] :color "Blue" :price nil}}]))
+         (fact "Can insert multiple document"
+               (with-db db (insert! :kites [{:_id 1 :name "blue"} {:_id 2 :name "red"}])
+                        (fetch-docs :kites) => [{:_id 1 :name "blue"} {:_id 2 :name "red"}]))
+         (fact "Use a write concern, when inserting"
+               (with-db db (insert! :kites {:name "blue"} :acknowledged)) => truthy)
+         (fact "Update fields in document"
+               (with-db db
+                        (insert! :kites {:_id 1 :name "blue" :size 5})
+                        (update-fields! :kites {:_id 1} {:name "green"})
+                        (fetch-first-doc :kites {:_id 1}) => {:_id 1 :name "green" :size 5}))
+         (fact "Reject to update or remove without _id"
+               (with-db db
+                        (update-fields! :kites {:foo "abc"} {:name "green"}) => (throws IllegalArgumentException)
+                        (update! :kites {:foo "abc"}) => (throws IllegalArgumentException)
+                        (remove! :kites {:name "green"}) => (throws IllegalArgumentException)))
+         (fact "Update document"
+               (with-db db
+                        (insert! :kites [{:_id 1 :name "blue" :field-to-lose-after-update 5}])
+                        (update! :kites {:_id 1 :name "green"})
+                        (fetch-first-doc :kites {:name "green"}) => {:_id 1 :name "green"}))
+         (fact "Update or insert document"
+               (with-db db
+                        (insert! :kites {:_id 1 :name "blue" :size 5})
+                        (update-or-insert! :kites {:_id 2 :name "red"})
+                        (fetch-first-doc :kites {:name "red"}) => {:_id 2 :name "red"}
+                        (update-or-insert! :kites {:_id 1 :name "green"})
+                        (fetch-first-doc :kites {:name "green"}) => {:_id 1 :name "green"}))
+         (fact "Remove document"
+               (with-db db
+                        (let [kite (insert! :kites {:name "blue"})]
+                          (remove! :kites kite)
+                          (count (fetch-docs :kites)) => 0)))
+         (fact "Use write concerns on update and remove"
+               (with-db db
+                        (insert! :kites {:_id 1 :name "blue" :size 5})
+                        (update-fields! :kites {:_id 1} {:name "green"} :journaled) => truthy
+                        (update! :kites {:_id 1 :name "red"} :unacknowledged)
+                        (remove! :kites {:_id 1} :acknowledged)))
+         (fact "Fail on wrong write concern"
+               (with-db db
+                        (update! :kites {:_id 1 :name "red"} :bad-write-concern) => (throws IllegalArgumentException))))
+  (facts "Optimistic locking with the document API"
+         (against-background
+           (before :facts (with-db db (drop! :kites))))
+         (fact "In case of optimistic locking, compare _id and _version and return false, if update fails"
+               (with-db db
+                        (optimistic (update-fields! :kites {:_id 1 :_version 1} {:name "green"})) => falsey))
+         (fact "Update version if success"
+               (with-db db
+                        (insert! :kites {:_id 1 :name "blue" :_version 1})
+                        (optimistic (update-fields! :kites {:_id 1 :_version 1} {:name "green"})) => truthy
+                        (fetch-first-doc :kites {}) => {:_id 1 :_version 2 :name "green"}))
+         (fact "Require _version field"
+               (with-db db
+                        (optimistic (update-fields! :kites {:_id 1} {})) => (throws IllegalArgumentException)))
+         (fact "Optimistic locking is supported for update! and remove!"
+               (with-db db
+                        (optimistic (update! :kites {:_id 1 :_version 1})) => falsey
+                        (insert! :kites {:_id 1 :name "blue" :_version 1})
+                        (optimistic (update! :kites {:_id 1 :_version 1})) => truthy
+                        (optimistic (remove! :kites {:_id 1 :_version 1})) => falsey
+                        (optimistic (remove! :kites {:_id 1 :_version 2})) => truthy)))
   (facts "Fetching docs"
          (against-background
            (before :facts (with-db db (drop! :kites)
