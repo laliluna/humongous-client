@@ -12,6 +12,17 @@ But this is not all humongous. A servant is ready, to be sent to the database to
 And humongous, if this is not yet enough, a bulk of servants is there to serve in parallel
   or to transport many of your wishes and fulfill them one by one.
  
+## A note of caution
+
+The API is not yet stable. You might consider to wait for version 0.1.
+
+TODO
+
+- Allow the command API without batch
+- Map, reduce pipelines
+- DB operations 
+
+ 
 ## Quick tour of document API in the REPL
 
 Open a connection to a database
@@ -119,6 +130,23 @@ You can specify a default concern while connecting
     
 ## Command API
 
+Mongo supports ordered and unordered bulk operations. Unordered can be executed in parallel, ordered only sequentially.
+
+    (require '[humongous.humongous :refer :all])
+    (h/with-db db 
+     (-> (unordered-bulk :dummy)
+      (insert {:_id 1 :foo "a"})
+      (update {:_id 3} {:foo "a2" :bar "b2" :bazz "c2"})
+      (update-first {:foo "a"} {:bar "b2"})
+      (update-first-or-insert {:_id "non existing"} {:foo "a2"})
+      (update-or-insert {:_id 2} {:foo "x"})
+      (remove-first-doc {:foo "a"})
+      (remove-doc {:foo "b"})
+      (execute!))
+    (-> (ordered-bulk :dummy)
+      (insert {:name "Joe"})
+      (remove-doc {:name "Joe"})
+      (execute!)))
 
 ## Internal API
  

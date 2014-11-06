@@ -2,7 +2,7 @@
   (:require [humongous.command :refer [unordered-bulk ordered-bulk insert
                                            update update-first replace-first
                                            update-or-insert update-first-or-insert replace-first-or-insert
-                                           remove-doc remove-one-doc
+                                           remove-doc remove-first-doc
                                            execute!]]
             [midje.sweet :refer :all]
             [humongous.humongous :as h]
@@ -65,7 +65,7 @@
                (h/with-db db
                           (h/insert! :dummy [{:_id 1 :foo "a"} {:_id 2 :foo "a"}])
                           (-> (unordered-bulk :dummy)
-                              (remove-one-doc {:foo "a"})
+                              (remove-first-doc {:foo "a"})
                               (execute!))
                           (h/fetch-docs :dummy {}) => [{:_id 2 :foo "a"}])))
 

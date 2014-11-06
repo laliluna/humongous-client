@@ -69,7 +69,7 @@
     (find-doc bulk query))
   bulk)
 
-(defn remove-one-doc [bulk query]
+(defn remove-first-doc [bulk query]
   (.removeOne
     (find-doc bulk query))
   bulk)
