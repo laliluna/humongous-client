@@ -14,5 +14,6 @@
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}}
   :aliases {"test-all"
-            ["with-profile" "dev,1.5:dev,1.6" "midje"]})
+            ["with-profile" "dev,1.5:dev,1.6" "midje"]}
+  :deploy-repositories [["releases" :clojars]])
   
