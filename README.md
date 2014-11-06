@@ -1,4 +1,4 @@
-# humongous-client
+# Humongous a Mongo DB client
 
 Humongous, humongous is your wishful servant to help you speaking to dear Mongo DB.
 
@@ -21,6 +21,8 @@ TODO
 - Allow the command API without batch
 - Map, reduce pipelines
 - DB operations 
+
+[![Clojars Project](http://clojars.org/humongous-client/latest-version.svg)](http://clojars.org/humongous-client)
 
  
 ## Quick tour of document API in the REPL
