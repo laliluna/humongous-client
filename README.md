@@ -46,8 +46,8 @@ Wrap everything in *with-db*
       ;---> Update field name to green of all matching documents
       (update! :kites {:_id 123 :name "blue"} )
       
-      ;---> Update field name to green of first matching document
-      (update-first! :kites {:_id 123 :name "blue"} {:name "green"})
+      ;---> Update field name to green of matching document
+      (update-fields! :kites {:_id 123 :name "blue"} {:name "green"})
 
 
 **Remove** document with id 123
