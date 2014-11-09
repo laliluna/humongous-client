@@ -9,7 +9,7 @@
             [humongous.db :as mongodb]))
 
 (mongodb/with-open!
-  [db (mongodb/create-db-client "mongodb://localhost:27017/test")]
+  [db (mongodb/create-db-client (or (System/getProperty "mongo.test.db")  "mongodb://localhost:27017/test"))]
 
   (facts "Bulk insert operations" (against-background
                                     (before :facts
@@ -91,7 +91,7 @@
                           (-> (unordered-bulk :dummy)
                               (update-first {:foo "a"} {:bar "b2"})
                               (execute!))
-                          (h/fetch-docs :dummy {}) => [{:_id 1 :foo "a" :bar "b2"}, {:_id 2 :foo "a" :bar "b"}]))
+                          (h/fetch-docs :dummy {} :order-by [:_id]) => [{:_id 1 :foo "a" :bar "b2"}, {:_id 2 :foo "a" :bar "b"}]))
          (fact "Can replace a document"
                (h/with-db db
                           (-> (unordered-bulk :dummy)
@@ -116,7 +116,7 @@
                           (-> (unordered-bulk :dummy)
                               (update-first-or-insert {:foo "a"} {:foo "a2"})
                               (execute!))
-                          (h/fetch-docs :dummy {}) => [{:_id 1 :foo "a2" :bar "b"} {:_id 2 :foo "a" :bar "b"}]))
+                          (h/fetch-docs :dummy {} :order-by [:_id]) => [{:_id 1 :foo "a2" :bar "b"} {:_id 2 :foo "a" :bar "b"}]))
          (fact "Update-one-or-insert inserts if nothing is found"
                (h/with-db db
                           (-> (unordered-bulk :dummy)
@@ -133,6 +133,6 @@
          (fact "Replace-one-or-insert inserts if nothing is found"
                (h/with-db db
                           (-> (unordered-bulk :dummy)
-                              (replace-first-or-insert {:_id "non existing"} {:foo "a2"})
+                              (replace-first-or-insert {:_id "non existing"} {:_id "non existing" :foo "a2"})
                               (execute!))
                           (h/fetch-first-doc :dummy  {:_id "non existing"})) => {:_id "non existing" :foo "a2"})))

@@ -13,6 +13,7 @@
              :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}
              :1.6 {:dependencies [[org.clojure/clojure "1.6.0"]]}}
+  ;:jvm-opts  ["-Dmongo.test.db=mongodb://192.168.33.21:27017/test"]
   :aliases {"test-all"
             ["with-profile" "dev,1.5:dev,1.6" "midje"]}
   :deploy-repositories [["releases" :clojars]])
