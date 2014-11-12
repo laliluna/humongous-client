@@ -294,7 +294,8 @@
    (ensure-id document)
    (.update (get-collection coll)
             (to-mongo {:_id (:_id document)})
-            (to-mongo (dissoc document :_id))
+            ; id is required in document or Mongo 2.4 breaks
+            (to-mongo document)
             true
             false
             (get-write-concern coll write-concern))))
