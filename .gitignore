@@ -11,3 +11,4 @@ target
 .nrepl-port
 .sass-cache
 dist
+docker
