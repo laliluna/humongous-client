@@ -6,10 +6,11 @@
                                            execute!]]
             [midje.sweet :refer :all]
             [humongous.humongous :as h]
-            [humongous.db :as mongodb]))
+            [humongous.db :as mongodb]
+            [humongous.test-util :refer [get-db-uri]]))
 
 (mongodb/with-open!
-  [db (mongodb/create-db-client (or (System/getProperty "mongo.test.db")  "mongodb://localhost:27017/test"))]
+  [db (mongodb/create-db-client (get-db-uri "test"))]
 
   (facts "Bulk insert operations" (against-background
                                     (before :facts

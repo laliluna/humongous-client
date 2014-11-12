@@ -3,11 +3,12 @@
            (org.bson.types ObjectId))
   (:require [midje.sweet :refer :all]
             [humongous.humongous :refer :all]
-            [humongous.db :as mongodb]))
+            [humongous.db :as mongodb]
+            [humongous.test-util :refer [get-db-uri]]))
 
 
 (mongodb/with-open!
-  [db (mongodb/create-db-client "mongodb://localhost:27017/test")]
+  [db (mongodb/create-db-client (get-db-uri "test"))]
   (facts "Document API"
          (against-background (before :facts (with-db db (drop! :kites))))
          (fact "Can insert document"
