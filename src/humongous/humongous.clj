@@ -259,7 +259,7 @@
      (to-clojure document))))
 
 (defn- ensure-id [{:keys [_id]}]
-  (if-not _id (throw (IllegalArgumentException. "A document update requires an _id"))))
+  (if-not _id (throw (IllegalArgumentException. "A document update or delete requires an _id"))))
 
 (defn update-fields!
   "Sample:
