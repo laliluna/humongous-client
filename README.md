@@ -35,52 +35,39 @@ Open a connection to a database
     
     ; it is thread safe, you need only one and you should close it when the application shuts down
     (mongodb/close! db)
-
-Wrap everything in *with-db*
-
-    (require '[humongous.humongous :refer :all])
-
-
-    (with-db db 
-      (insert! ...) 
-      (update! ...) 
-      (fetch-docs ...))
     
 **Insert** one or many documents
     
-    (with-db db (insert! :kites {:name "Blue"}))
+    (insert! db :kites {:name "Blue"})
 
-    (with-db db 
-      (insert! :kites [{:_id 1 :name "blue"} {:_id 2 :name "red"}]))
+    (insert! db :kites [{:_id 1 :name "blue"} {:_id 2 :name "red"}])
 
 **Update** fields of a document or the document as a whole
                          
-    (with-db db 
-      ;---> Update field name to green of all matching documents
-      (update! :kites {:_id 123 :name "blue"} )
+    ;---> Update field name to green of all matching documents
+    (update! db :kites {:_id 123 :name "blue"})
       
-      ;---> Update field name to green of matching document
-      (update-fields! :kites {:_id 123 :name "blue"} {:name "green"})
+    ;---> Update field name to green of matching document
+    (update-fields! db :kites {:_id 123 :name "blue"} {:name "green"})
 
 
 **Remove** document with id 123
       
-      (with-db db
-        (remove! :kites {:_id 123 :name "blue"))
+      (remove! db :kites {:_id 123 :name "blue"})
                                     
 **Fetch** documents
 
     ;---> fetch kites with name *red*
-    (with-db db (fetch-docs :kites {:name "red"})
+    (fetch-docs db :kites {:name "red"})
     
     ;---> Fetch just the first matching
-    (with-db db (fetch-first-doc :kites {:name "green"}))
+    (fetch-first-doc db :kites {:name "green"})
     
     ;---> Use the Mongo operator  http://docs.mongodb.org/manual/tutorial/query-documents/
-    (with-db db (fetch-docs :kites {:size {:$lt 7}})
+    (fetch-docs db :kites {:size {:$lt 7}})
     
     ;---> Select the request fields and sort the result
-    (with-db db (fetch-docs :kites {:name "blue"} :fields [:name] :order-by [[:name :desc]]))
+    (fetch-docs db :kites {:name "blue"} :fields [:name] :order-by [[:name :desc]])
 
 ## Optimistic locking for the document API
 
@@ -88,21 +75,20 @@ Update and remove operation check only the _id by default. If you wrap the opera
  the fields *_id and _version* are checked. If the *_version* is different, or the document is missing,
   the operation return false, else it bumps up the version in one go and returns the *WriteResult*.
  
-    (with-db db
-     (optimistic (update! :kites {:_id 1 :_version 1}))
-     ; -> false 
-     ; no kite no update
+    (optimistic (update! db :kites {:_id 1 :_version 1}))
+    ; -> false 
+    ; no kite no update
      
-     (insert! :kites {:_id 1 :name "blue" :_version 2})
-     (optimistic (update! :kites {:_id 1 :_version 1}))
-     ; -> false 
-     ; wrong version
+    (insert! db :kites {:_id 1 :name "blue" :_version 2})
+    (optimistic (update! db :kites {:_id 1 :_version 1}))
+    ; -> false 
+    ; wrong version
      
-     (optimistic (update! :kites {:_id 1 :name "red" :_version 1}))
-     ; -> #<WriteResult { "serverUsed" : "localhost:27017" , "ok" : 1 , "n" : 1}>
-     ; success, version is bumped up as well
-     (fetch-first-doc :kites {})
-     ; -> {:_id 1 :name "red" :_version 2}
+    (optimistic (update! db :kites {:_id 1 :name "red" :_version 1}))
+    ; -> #<WriteResult { "serverUsed" : "localhost:27017" , "ok" : 1 , "n" : 1}>
+    ; success, version is bumped up as well
+    (fetch-first-doc db :kites {})
+    ; -> {:_id 1 :name "red" :_version 2}
                                                         
 ## Write concerns
  
@@ -111,9 +97,8 @@ replicated DB, or to the majority, or ...
 
 You can find the supported write concerns in: *humongous.db#write-concerns*
 
-    (with-db db
-      (insert! :kites {:_id 1 :name "blue" :size 5})
-      (update! :kites {:_id 1 :name "red"} :unacknowledged))
+    (insert! db :kites {:_id 1 :name "blue" :size 5})
+    (update! db :kites {:_id 1 :name "red"} :unacknowledged)
       
 Write concerns are supported for
       
@@ -135,8 +120,7 @@ You can specify a default concern while connecting
 Mongo supports ordered and unordered bulk operations. Unordered can be executed in parallel, ordered only sequentially.
 
     (require '[humongous.humongous :refer :all])
-    (h/with-db db 
-     (-> (unordered-bulk :dummy)
+    (-> (unordered-bulk db :dummy)
       (insert {:_id 1 :foo "a"})
       (update {:_id 3} {:foo "a2" :bar "b2" :bazz "c2"})
       (update-first {:foo "a"} {:bar "b2"})
@@ -145,7 +129,7 @@ Mongo supports ordered and unordered bulk operations. Unordered can be executed 
       (remove-first-doc {:foo "a"})
       (remove-doc {:foo "b"})
       (execute!))
-    (-> (ordered-bulk :dummy)
+    (-> (ordered-bulk db :dummy)
       (insert {:name "Joe"})
       (remove-doc {:name "Joe"})
       (execute!)))
@@ -156,10 +140,9 @@ Mongo supports ordered and unordered bulk operations. Unordered can be executed 
 
 You can use them as well
 
-    (with-db db
-     (ensure-index :kites {:name 1})
+    (ensure-index db :kites {:name 1})
      (->
-       (query :kites {:size 7})
+       (query db :kites {:size 7})
         (order-by [:name])
         (skip 1)
         (limit 1)
@@ -171,16 +154,14 @@ You can use them as well
 
 Explain the server's query plan
 
-    (with-db db
-     (->
-       (query :kites {:size 7})
-       (explain)))
+    (->
+      (query db :kites {:size 7})
+      (explain)))
        
 Count rows on the server       
 
-    (with-db db
      (->
-       (query :kites {:size 7})
+       (query db :kites {:size 7})
        (count-rows)))
        
 Fall back to Java method calls, if something is missing
@@ -188,10 +169,9 @@ Fall back to Java method calls, if something is missing
     (defn add-comment [cursor c]
       (.comment cursor c))
     
-    (with-db db
-     (ensure-index :kites {:name 1})
+    (ensure-index db :kites {:name 1})
      (->
-       (query :kites {:size 7})
+       (query db :kites {:size 7})
        (add-comment "look at this query it is slow")
        (fetch))) 
        

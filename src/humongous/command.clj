@@ -3,11 +3,11 @@
   (:require [humongous.humongous :as h]))
 
 
-(defn unordered-bulk [coll]
-  (.initializeUnorderedBulkOperation (h/get-collection coll)))
+(defn unordered-bulk [db coll]
+  (.initializeUnorderedBulkOperation (h/get-collection db coll)))
 
-(defn ordered-bulk [coll]
-  (.initializeOrderedBulkOperation (h/get-collection coll)))
+(defn ordered-bulk [db coll]
+  (.initializeOrderedBulkOperation (h/get-collection db coll)))
 
 (defn insert [bulk data & moredata]
   (doseq [v (flatten [data (or moredata [])])]
