@@ -67,6 +67,14 @@
   [db coll]
   (.getCollection db (name coll)))
 
+(defn get-write-concern
+  ([write-concern]
+   (translate-write-concern write-concern))
+  ([db coll write-concern]
+   (if (or (nil? write-concern) (= write-concern :default-write-concern))
+     (.getWriteConcern (get-collection db coll))
+     (translate-write-concern write-concern))))
+
 (defn drop!
   "Sample:
   --------
@@ -125,6 +133,20 @@
    (.find (get-collection db coll)
           (to-mongo q)
           (to-mongo (build-field-map fields)))))
+
+(defn remove-it
+  "Removes documents matching the query
+   Sample:
+   -------
+   Remove all kites with blue color
+   (remove-it db :kites {:color \"blue\"})"
+  ([db coll query]
+   (remove-it db coll query :default-write-concern))
+  ([db coll query write-concern]
+   (.remove
+     (get-collection db coll)
+     (to-mongo query)
+     (get-write-concern db coll write-concern))))
 
 (defn fetch [^DBCursor cursor]
   (doall (map to-clojure cursor)))
@@ -212,16 +234,6 @@
              query-hint_ (query-hint query-hint_)
              true (fetch)))))
 
-
-
-(defn get-write-concern
-  ([write-concern]
-   (translate-write-concern write-concern))
-  ([db coll write-concern]
-   (if (or (nil? write-concern) (= write-concern :default-write-concern))
-     (.getWriteConcern (get-collection db coll))
-     (translate-write-concern write-concern))))
-
 (defn insert!
   "Sample:
   -------
@@ -307,7 +319,7 @@
 (defn remove!
   "Sample:
   -------
-  Remove all documents with name 'blue'
+  Remove the given document
     (remove! db :kites {:_id 123 })
   Use a Mongo write concern
     (remove! db :kites {:_id 123 } :journaled)"
