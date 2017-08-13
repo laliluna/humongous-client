@@ -1,5 +1,5 @@
 (defproject
- humongous-client "0.0.3-SNAPSHOT"
+ humongous-client "0.0.3"
  :description "Mongo DB client"
  :url "https://github.com/laliluna/humongous-client"
  :license {:name "Apache License Version 2.0"
