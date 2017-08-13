@@ -1,5 +1,7 @@
 language: clojure
 services: mongodb
+addons:
+  mongodb: "2.6"
 lein: lein2
 script: lein2 test-all
 jdk:
