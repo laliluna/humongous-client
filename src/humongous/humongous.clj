@@ -369,9 +369,12 @@
 (defn create-index
   "Sample:
   --------
-  (create-index db :kites {:name 1})"
-  [db coll data]
-  (.createIndex (get-collection db coll) (to-mongo data)))
+  (create-index db :kites {:name 1})
+  (create-index db :kites {:name \"text\"}  {:default_language \"en\"})"
+  ([db coll data]
+   (.createIndex (get-collection db coll) (to-mongo data)))
+  ([db coll data options]
+   (.createIndex (get-collection db coll) (to-mongo data) (to-mongo options))))
 
 (defn get-indexes
   "Sample:

@@ -115,6 +115,8 @@
            (count (get-indexes db :kites)) => 2
            (drop-index db :kites "name_1")
            (count (get-indexes db :kites)) => 1)
+         (fact "Can create index with options"
+           (create-index db :kites {:name "text"}  {:default_language "en"}))
 
          (fact "Chained API to allow full access"
                (create-index db :kites {:name 1})
