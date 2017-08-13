@@ -106,7 +106,7 @@
 
      Hint: :order-by [:size] is the same as :order-by [[:size :asc]]"
   [db coll query & {:keys [fields order-by] :as params
-                 :or   {fields nil order-by nil}}]
+                    :or   {fields nil order-by nil}}]
   (if-not (empty? (apply dissoc params valid-params-fetch-one))
     (throw (IllegalArgumentException. (str "Unsupported params: " (keys (apply dissoc params valid-params-fetch-one))))))
   (let [mongo-coll (get-collection db coll)]
@@ -115,8 +115,8 @@
                 ^DBObject (to-mongo query)
                 ^DBObject (to-mongo (build-field-map fields))
                 ^DBObject (to-mongo (build-order-map order-by))
-                (.getReadPreference mongo-coll)
-                ))))
+                (.getReadPreference mongo-coll)))))
+
 
 (defn query
   ([db coll q]
@@ -197,8 +197,8 @@
   ([db coll]
    (fetch-docs db coll {}))
   ([db coll q & {fields      :fields order-by_ :order-by limit_ :limit skip_ :skip query-comment_ :query-comment
-              batch-size_ :batch-size timeout-millis_ :timeout-millis query-hint_ :query-hint :as params
-              :or         {fields nil batch-size nil order-by nil limit nil skip nil query-comment nil timeout-millis nil query-hint nil}}]
+                 batch-size_ :batch-size timeout-millis_ :timeout-millis query-hint_ :query-hint :as params
+                 :or         {fields nil batch-size nil order-by nil limit nil skip nil query-comment nil timeout-millis nil query-hint nil}}]
    (if-not (empty? (apply dissoc params valid-params))
      (throw (IllegalArgumentException. (str "Unsupported params: " (keys (apply dissoc params valid-params))))))
    (with-open [cursor (query db coll q fields)]
@@ -366,9 +366,23 @@
          (remove-optimistic-lock! ~@args)
          :else (throw (IllegalArgumentException. (str "Optimistic lock is not supported for fn: " #'~fn)))))
 
-(defn ensure-index
+(defn create-index
   "Sample:
   --------
-  (ensure-index db :kites {:name 1})"
+  (create-index db :kites {:name 1})"
   [db coll data]
-  (.ensureIndex (get-collection db coll) (to-mongo data)))
+  (.createIndex (get-collection db coll) (to-mongo data)))
+
+(defn get-indexes
+  "Sample:
+  --------
+  (get-indexes db :kites"
+  [db coll]
+  (.getIndexInfo (get-collection db coll)))
+
+(defn drop-index
+  "Sample:
+  --------
+  (drop-index db :kites \"name_text\")"
+  [db coll name]
+  (.dropIndex (get-collection db coll) name))

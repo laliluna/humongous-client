@@ -106,11 +106,18 @@
          (fact "Limit query execution time"
                (fetch-docs db :kites {} :timeout-millis 5000))
          (fact "Give a query hint to use an index"
-               (ensure-index db :kites {:name 1})
+               (create-index db :kites {:name 1})
                (fetch-docs db :kites {:name "blue"} :query-hint "name_1")
                (fetch-docs db :kites {:name "blue"} :query-hint {:name 1}))
+         (fact "Can create and drop index"
+           (count (get-indexes db :kites)) => 1
+           (create-index db :kites {:name 1})
+           (count (get-indexes db :kites)) => 2
+           (drop-index db :kites "name_1")
+           (count (get-indexes db :kites)) => 1)
+
          (fact "Chained API to allow full access"
-               (ensure-index db :kites {:name 1})
+               (create-index db :kites {:name 1})
                (->
                  (query db :kites {:size 7})
                  (order-by [:name])
@@ -126,5 +133,4 @@
                  (explain)) => truthy
                (->
                  (query db :kites {:size 7})
-                 (count-rows)) => 2
-               )))
+                 (count-rows)) => 2)))
