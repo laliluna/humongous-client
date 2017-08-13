@@ -12,3 +12,4 @@ target
 .sass-cache
 dist
 docker
+.lein-repl-history
